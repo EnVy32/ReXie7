@@ -1,8 +1,10 @@
 import pandas as pd
+import joblib
 from sklearn.model_selection import train_test_split
 # NEW IMPORT: The Heavy Artillery
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, r2_score
+from pathlib import Path
 
 def split_data(df):
     """
@@ -45,3 +47,18 @@ def evaluate_model(model, X_test, y_test):
     r2 = r2_score(y_test, predictions)
     
     return mae, r2, predictions
+
+def save_model(model, filepath):
+    """
+    Saves the trained model to a file using Joblib.
+    """
+
+    print(f"---SAVING MODEL---")
+
+    #Ensure the directory exists
+    filepath.parent.mkdir(parents = True, exist_ok = True)
+
+    #Dump the model to the file
+    joblib.dump(model, filepath)
+
+    print(f"--> Model saved successfully to: {filepath}")

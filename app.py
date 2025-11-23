@@ -3,6 +3,9 @@ from pathlib import Path
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import joblib
+import io
+from src.model import split_data, train_model, evaluate_model, save_model
 
 #Import modules
 from src.data_loader import load_raw_data, save_processed_data, generate_synthetic_data
@@ -175,6 +178,35 @@ with tab2:
         kpi3.metric("Test Samples", len(y_test), help="Number of cars used for this test.")
 
         st.divider()
+        st.markdown("### 💾 Model Persistence")
+
+        #Create two options: Save to disk (Server) OR Download (Client)
+
+        col_save1, col_save2 = st.columns(2)
+
+        with col_save1:
+            #Save to local folder
+            if st.button("Save to 'models/' folder"):
+                model_path = Path.cwd() / 'models' / 'random_forest_v1.pkl'
+                save_model(model, model_path)
+                st.success(f"Saved locally to: {model_path}")
+
+        with col_save2:
+            #Download to User's computer
+            #Create an in-memory buffer
+            buffer = io.BytesIO()
+            #Dump the model into the buffer instead of a file
+            joblib.dump(model, buffer)
+            #Rewind buffer to the beginning so it can be read
+            buffer.seek(0)
+
+            st.download_button(
+                label= "📥 Download Model (.pkl)",
+                data= buffer,
+                file_name= "jdm_price_predictor.pkl",
+                mime= "application/octet-stream",
+                help= "Download the trained 'brain' to use in other apps."
+            )
 
         # SECTION B: Feature Importance (The "Brain" Scan)
         st.markdown("### 🧠 Feature Importance")
