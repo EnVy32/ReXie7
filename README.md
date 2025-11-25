@@ -6,7 +6,7 @@
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
 ![AI](https://img.shields.io/badge/Model-XGBoost-orange)
-![Status](https://img.shields.io/badge/Status-Beta--v0.3-orange)
+![Status](https://img.shields.io/badge/Status-Beta--v0.4-orange)
 
 ---
 
