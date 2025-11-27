@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 import time
 import requests
 import os
+import joblib  # Added for Model Persistence
 from streamlit_lottie import st_lottie
 
 # Backend imports
@@ -26,6 +27,7 @@ st.set_page_config(
 CACHE_DIR = Path.cwd() / "data" / "cache"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 SESSION_FILE = CACHE_DIR / "session_cache.csv"
+MODEL_FILE = CACHE_DIR / "neural_core.joblib"  # New: Model Cache Path
 
 # Load Lottie Animation
 @st.cache_data
@@ -162,7 +164,16 @@ if 'buffer_df' not in st.session_state:
         st.session_state.buffer_logs = []
         st.session_state.target_name = None
 
-if 'buffer_model' not in st.session_state: st.session_state.buffer_model = None
+# [FIX] Load Model from Disk if it exists (Persist across reloads)
+if 'buffer_model' not in st.session_state:
+    if MODEL_FILE.exists():
+        try:
+            st.session_state.buffer_model = joblib.load(MODEL_FILE)
+            # Optional: Add a log to buffer_logs if you want visibility
+        except Exception:
+             st.session_state.buffer_model = None
+    else:
+        st.session_state.buffer_model = None
 
 # --- [HEADER] ---
 c1, c2 = st.columns([1, 10])
@@ -233,6 +244,12 @@ if ignite_btn:
                 st.session_state.target_name = real_name
                 
                 df.to_csv(SESSION_FILE, index=False)
+                
+                # [OPTIONAL] Clear old model when new data arrives to avoid mismatch
+                if MODEL_FILE.exists():
+                    os.remove(MODEL_FILE)
+                st.session_state.buffer_model = None
+
                 status_text.success(f"DATA SECURE. IDENTIFIED: {real_name}")
                 time.sleep(1) 
             else:
@@ -344,6 +361,7 @@ with tab_ai:
                 X_train, X_test, y_train, y_test = split_data(df_enc)
                 
                 st.write("⚡ Optimizing XGBoost Hyperparameters (Grid Search)...")
+                # Warning: This step is resource intensive and may cause reload on low-memory envs
                 model = train_model(X_train, y_train)
                 
                 st.write("🔹 Running Diagnostics & Calculating Overfit Risk...")
@@ -356,6 +374,10 @@ with tab_ai:
                     'adv_metrics': adv_metrics,
                     'cols': X_train.columns
                 }
+                
+                # [FIX] Save Model to Disk immediately to prevent state loss on reload
+                joblib.dump(st.session_state.buffer_model, MODEL_FILE)
+                
                 status.update(label="✅ Training Complete. Neural Core Online.", state="complete", expanded=False)
 
     if st.session_state.buffer_model:
